@@ -7,7 +7,6 @@ import tkinter as tk
 from tkinter import messagebox, simpledialog
 from datetime import datetime
 from collections import deque
-import os
 
 from board_generator import BoardGenerator
 
@@ -108,7 +107,7 @@ class MinesweeperGame:
         )
         self.timer_label.pack(side='left', padx=20)
         
-        # Mines remaining counter (changed from mine counter)
+        # Mines remaining counter
         self.mine_label = tk.Label(
             info_frame,
             text=f"💣 Remaining: {self.total_mines}",
@@ -119,7 +118,7 @@ class MinesweeperGame:
         )
         self.mine_label.pack(side='left', padx=10)
         
-        # Flag counter (shows how many flags placed)
+        # Flag counter
         self.flag_label = tk.Label(
             info_frame,
             text=f"🚩 Flags: {self.flag_count}",
@@ -154,40 +153,62 @@ class MinesweeperGame:
                     )
                 
                 btn.grid(row=row+1, column=col, padx=1, pady=1)
+                
+                # Left click - reveal cell
                 btn.bind("<Button-1>", lambda e, r=row, c=col: self.left_click(r, c))
+                
+                # Right click - flag (multiple methods for Mac compatibility)
                 btn.bind("<Button-3>", lambda e, r=row, c=col: self.right_click(r, c))
-                btn.bind("<Button-2>", lambda e, r=row, c=col: self.right_click(r, c))  # Mac
+                btn.bind("<Button-2>", lambda e, r=row, c=col: self.right_click(r, c))
+                btn.bind("<Control-Button-1>", lambda e, r=row, c=col: self.right_click(r, c))
+                btn.bind("<Shift-Button-1>", lambda e, r=row, c=col: self.right_click(r, c))
                 
                 button_row.append(btn)
             self.buttons.append(button_row)
         
-        # Bottom button panel
+        # Bottom button panel - FIXED: Use Labels styled as buttons
         button_frame = tk.Frame(self.frame, bg='#2c3e50')
         button_frame.grid(row=self.rows+1, column=0, columnspan=self.cols, pady=10)
-        
-        tk.Button(
+
+        # New Game button (as Label)
+        new_game_btn = tk.Label(
             button_frame,
             text="New Game",
-            command=self.restart_game,
-            width=12,
+            font=("Arial", 10, "bold"),
             bg='#27ae60',
             fg='white',
-            font=("Arial", 10, "bold"),
-            relief='flat',
-            cursor='hand2'
-        ).pack(side='left', padx=5)
-        
-        tk.Button(
+            width=12,
+            height=1,
+            relief='raised',
+            borderwidth=2,
+            cursor='hand2',
+            padx=10,
+            pady=5
+        )
+        new_game_btn.pack(side='left', padx=5)
+        new_game_btn.bind("<Button-1>", lambda e: self.restart_game())
+        new_game_btn.bind("<Enter>", lambda e: new_game_btn.config(bg='#2ecc71'))
+        new_game_btn.bind("<Leave>", lambda e: new_game_btn.config(bg='#27ae60'))
+
+        # Main Menu button (as Label)
+        main_menu_btn = tk.Label(
             button_frame,
             text="Main Menu",
-            command=self.close_game,
-            width=12,
+            font=("Arial", 10, "bold"),
             bg='#3498db',
             fg='white',
-            font=("Arial", 10, "bold"),
-            relief='flat',
-            cursor='hand2'
-        ).pack(side='left', padx=5)
+            width=12,
+            height=1,
+            relief='raised',
+            borderwidth=2,
+            cursor='hand2',
+            padx=10,
+            pady=5
+        )
+        main_menu_btn.pack(side='left', padx=5)
+        main_menu_btn.bind("<Button-1>", lambda e: self.close_game())
+        main_menu_btn.bind("<Enter>", lambda e: main_menu_btn.config(bg='#5dade2'))
+        main_menu_btn.bind("<Leave>", lambda e: main_menu_btn.config(bg='#3498db'))
         
         # Start timer update
         self.update_timer()
@@ -224,53 +245,42 @@ class MinesweeperGame:
         if self.game_over:
             return
         
-        # Ignore clicks on flagged cells
         if self.cell_states[row][col] == self.STATE_FLAGGED:
             return
         
-        # Ignore already revealed cells
         if self.cell_states[row][col] == self.STATE_CLICKED:
             return
         
-        # Generate board on first click (safe first click)
         if self.first_click:
             self.generate_board(row, col)
             self.first_click = False
             self.start_time = datetime.now()
         
-        # Check if mine
         if self.board[row][col] == -1:
             self.reveal_cell(row, col)
             self.end_game(won=False)
             return
         
-        # Reveal cell
         self.reveal_cell(row, col)
         
-        # If cell is 0, reveal surrounding cells
         if self.board[row][col] == 0:
             self.reveal_surrounding(row, col)
         
-        # Check win condition
         if self.check_win():
             self.end_game(won=True)
     
     def right_click(self, row, col):
-    ###Handle right click (flag/unflag)###
+        """Handle right click (flag/unflag)"""
         if self.game_over:
             return
         
-        # Ignore already revealed cells
         if self.cell_states[row][col] == self.STATE_CLICKED:
             return
         
-        # Start timer on first action
         if self.first_click and not self.start_time:
             self.start_time = datetime.now()
         
-        # Toggle flag
         if self.cell_states[row][col] == self.STATE_FLAGGED:
-            # Unflag - always allowed
             self.cell_states[row][col] = self.STATE_DEFAULT
             if self.use_images:
                 self.buttons[row][col].config(image=self.images["plain"])
@@ -278,32 +288,24 @@ class MinesweeperGame:
                 self.buttons[row][col].config(text=" ", bg="#95a5a6", fg="#2c3e50")
             self.flag_count -= 1
         else:
-            # Check if we've reached the flag limit
             if self.flag_count >= self.total_mines:
-                # Show a warning message
                 messagebox.showwarning(
                     "Flag Limit Reached",
                     f"You cannot place more than {self.total_mines} flags!\n\nRemove a flag first to place a new one."
                 )
                 return
             
-            # Place flag - only if under the limit
             self.cell_states[row][col] = self.STATE_FLAGGED
             if self.use_images:
                 self.buttons[row][col].config(image=self.images["flag"])
             else:
-                # Show flag emoji
                 self.buttons[row][col].config(text="🚩", fg="red", bg="#f39c12", font=("Arial", 16))
             self.flag_count += 1
         
-        # Update mine counter
         self.update_mine_counter()
-
-
     
     def generate_board(self, exclude_row, exclude_col):
         """Generate the board, excluding first click and neighbors"""
-        # Get cells to exclude (first click + neighbors)
         exclude_cells = set()
         exclude_cells.add((exclude_row, exclude_col))
         neighbors = BoardGenerator.get_neighbors(
@@ -311,7 +313,6 @@ class MinesweeperGame:
         )
         exclude_cells.update(neighbors)
         
-        # Generate board
         self.board = BoardGenerator.generate_board(
             self.rows, self.cols, self.total_mines, exclude_cells
         )
@@ -359,20 +360,17 @@ class MinesweeperGame:
                 continue
             visited.add((r, c))
             
-            # Get neighbors
             neighbors = BoardGenerator.get_neighbors(r, c, self.rows, self.cols)
             
             for nr, nc in neighbors:
                 if self.cell_states[nr][nc] != self.STATE_CLICKED:
                     self.reveal_cell(nr, nc)
                     
-                    # If neighbor is also 0, add to queue
                     if self.board[nr][nc] == 0 and (nr, nc) not in visited:
                         queue.append((nr, nc))
     
     def check_win(self):
         """Check if the player has won"""
-        # Win condition: all non-mine cells revealed
         total_cells = self.rows * self.cols
         non_mine_cells = total_cells - self.total_mines
         return self.revealed_count == non_mine_cells
@@ -383,24 +381,20 @@ class MinesweeperGame:
         self.game_won = won
         
         if not won:
-            # Reveal all mines
             for row in range(self.rows):
                 for col in range(self.cols):
                     if self.board[row][col] == -1:
                         if self.cell_states[row][col] == self.STATE_FLAGGED:
-                            # Correctly flagged mine
                             if self.use_images:
                                 self.buttons[row][col].config(image=self.images["flag"])
                             else:
                                 self.buttons[row][col].config(text="🚩", bg="#27ae60", font=("Arial", 16))
                         else:
-                            # Unrevealed mine
                             if self.use_images:
                                 self.buttons[row][col].config(image=self.images["mine"])
                             else:
                                 self.buttons[row][col].config(text="💣", bg="#e74c3c", font=("Arial", 16))
                     elif self.cell_states[row][col] == self.STATE_FLAGGED:
-                        # Wrong flag
                         if self.use_images:
                             self.buttons[row][col].config(image=self.images["wrong"])
                         else:
@@ -409,11 +403,9 @@ class MinesweeperGame:
             messagebox.showinfo("Game Over", "You hit a mine!\n\nBetter luck next time!")
         
         else:
-            # Calculate time
             elapsed = (datetime.now() - self.start_time).total_seconds()
             time_str = f"{int(elapsed//60):02d}:{int(elapsed%60):02d}"
             
-            # Check if highscore
             config_key = self.highscore_manager.get_config_key(
                 self.rows, self.cols, self.total_mines
             )
@@ -427,7 +419,6 @@ class MinesweeperGame:
                 
                 messagebox.showinfo("Victory!", msg)
                 
-                # Ask for name
                 player_name = simpledialog.askstring(
                     "Highscore!",
                     "Enter your name:",
@@ -451,7 +442,6 @@ class MinesweeperGame:
     
     def restart_game(self):
         """Restart the current game"""
-        # Reset game state
         self.board = None
         self.cell_states = [[self.STATE_DEFAULT for _ in range(self.cols)] 
                            for _ in range(self.rows)]
@@ -462,7 +452,6 @@ class MinesweeperGame:
         self.start_time = None
         self.first_click = True
         
-        # Reset UI
         self.update_mine_counter()
         self.timer_label.config(text="00:00:00")
         
@@ -478,7 +467,6 @@ class MinesweeperGame:
                         font=("Courier", 10, "bold")
                     )
         
-        # Restart timer
         self.update_timer()
     
     def close_game(self):
@@ -489,10 +477,8 @@ class MinesweeperGame:
 
 
 if __name__ == "__main__":
-    # Test the game
     from highscores import HighscoreManager
     
-    # Need a root window for testing
     root = tk.Tk()
     root.withdraw()
     
