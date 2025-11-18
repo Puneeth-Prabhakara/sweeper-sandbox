@@ -388,18 +388,32 @@ class MainMenu:
                     )
                     return
                 
-                # ✨ NEW FIX: Prevent instant-win on small boards
+                # ✨ UPDATED FIX: Prevent instant-win on small boards (both too few AND too many)
                 if total_cells < 36:  # Smaller than 6×6
-                    max_safe_mines = int(total_cells * 0.15)  # Max 15% mines for small boards
+                    min_safe_mines = max(2, int(total_cells * 0.08))  # At least 8% mines or 2 minimum
+                    max_safe_mines = int(total_cells * 0.15)  # Max 15% mines
+                    
+                    if mines < min_safe_mines:
+                        messagebox.showerror(
+                            "Too Few Mines",
+                            f"⚠️ Too few mines can cause instant wins!\n\n"
+                            f"For a {rows}×{cols} board ({total_cells} cells):\n"
+                            f"• Recommended minimum: {min_safe_mines} mines (8%)\n"
+                            f"• You entered: {mines} mine(s) ({int(mines/total_cells*100)}%)\n\n"
+                            f"Too few mines create huge empty areas.\n"
+                            f"Increase mines to at least {min_safe_mines}."
+                        )
+                        return
+                    
                     if mines > max_safe_mines:
                         messagebox.showerror(
-                            "Board Too Small",
-                            f"⚠️ Configuration may cause instant wins!\n\n"
+                            "Too Many Mines",
+                            f"⚠️ Too many mines can cause instant wins!\n\n"
                             f"For a {rows}×{cols} board ({total_cells} cells):\n"
                             f"• Recommended max: {max_safe_mines} mines (15%)\n"
                             f"• You entered: {mines} mines ({int(mines/total_cells*100)}%)\n\n"
-                            f"Small boards need fewer mines to prevent instant wins.\n"
-                            f"Use a larger board or reduce mines to {max_safe_mines}."
+                            f"Small boards need the right mine balance.\n"
+                            f"Reduce mines to at most {max_safe_mines}."
                         )
                         return
                 
@@ -432,7 +446,7 @@ class MainMenu:
             except ValueError:
                 messagebox.showerror("Invalid Input", "Please enter valid numbers")
         
-        # FIXED: Using ttk.Button with style
+        # Using ttk.Button with style
         ttk.Button(
             dialog,
             text="🚀 Start Game",
@@ -539,7 +553,6 @@ class MainMenu:
         config_dropdown.bind('<<ComboboxSelected>>', lambda e: update_display())
         update_display()
         
-        # FIXED: Using ttk.Button with style
         ttk.Button(
             hs_window,
             text="Close",
@@ -667,7 +680,6 @@ class MainMenu:
             except ValueError:
                 messagebox.showerror("Invalid Input", "Please enter valid numbers")
         
-        # FIXED: Using ttk.Button with style
         ttk.Button(
             dialog,
             text="🚀 Generate Analytics",
