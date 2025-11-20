@@ -352,9 +352,6 @@ class MainMenu:
                 # Calculate total cells
                 total_cells = rows * cols
                 
-                # Maximum mines (leave safe starting area)
-                max_mines = total_cells - 10
-                
                 # Minimum mines validation
                 if mines < 1:
                     messagebox.showerror(
@@ -375,7 +372,41 @@ class MainMenu:
                     )
                     return
                 
-                # Reasonable maximum validation
+                # ✨✨✨ INSTANT-WIN BUG FIX - MUST RUN BEFORE OTHER CHECKS ✨✨✨
+                # This prevents instant-win on small boards (both too few AND too many mines)
+                if total_cells < 36:  # Boards smaller than 6×6
+                    min_safe_mines = max(2, int(total_cells * 0.08))  # At least 8% or minimum 2
+                    max_safe_mines = int(total_cells * 0.15)  # Maximum 15%
+                    
+                    # Check for TOO FEW mines
+                    if mines < min_safe_mines:
+                        messagebox.showerror(
+                            "Too Few Mines",
+                            f"⚠️ Too few mines cause instant wins!\n\n"
+                            f"For a {rows}×{cols} board ({total_cells} cells):\n"
+                            f"• Minimum required: {min_safe_mines} mines\n"
+                            f"• You entered: {mines} mine(s)\n\n"
+                            f"With so few mines, the entire board becomes\n"
+                            f"one giant opening - you win on first click!\n\n"
+                            f"Please use at least {min_safe_mines} mines."
+                        )
+                        return  # STOP - don't start the game
+                    
+                    # Check for TOO MANY mines
+                    if mines > max_safe_mines:
+                        messagebox.showerror(
+                            "Too Many Mines",
+                            f"⚠️ Too many mines cause instant wins!\n\n"
+                            f"For a {rows}×{cols} board ({total_cells} cells):\n"
+                            f"• Maximum recommended: {max_safe_mines} mines\n"
+                            f"• You entered: {mines} mines\n\n"
+                            f"Mines get clustered, creating huge openings.\n\n"
+                            f"Please use at most {max_safe_mines} mines."
+                        )
+                        return  # STOP - don't start the game
+                
+                # Reasonable maximum validation (for larger boards)
+                max_mines = total_cells - 10
                 if mines > max_mines:
                     messagebox.showerror(
                         "Invalid Input", 
@@ -383,54 +414,25 @@ class MainMenu:
                         f"Board: {rows}×{cols} ({total_cells} cells)\n"
                         f"Mines: {mines}\n"
                         f"Recommended maximum: {max_mines}\n\n"
-                        f"Tip: Mines should be 10-20% of total cells\n"
-                        f"for a balanced game."
+                        f"Tip: Mines should be 10-20% of total cells."
                     )
                     return
                 
-                # ✨ UPDATED FIX: Prevent instant-win on small boards (both too few AND too many)
-                if total_cells < 36:  # Smaller than 6×6
-                    min_safe_mines = max(2, int(total_cells * 0.08))  # At least 8% mines or 2 minimum
-                    max_safe_mines = int(total_cells * 0.15)  # Max 15% mines
-                    
-                    if mines < min_safe_mines:
-                        messagebox.showerror(
-                            "Too Few Mines",
-                            f"⚠️ Too few mines can cause instant wins!\n\n"
-                            f"For a {rows}×{cols} board ({total_cells} cells):\n"
-                            f"• Recommended minimum: {min_safe_mines} mines (8%)\n"
-                            f"• You entered: {mines} mine(s) ({int(mines/total_cells*100)}%)\n\n"
-                            f"Too few mines create huge empty areas.\n"
-                            f"Increase mines to at least {min_safe_mines}."
-                        )
-                        return
-                    
-                    if mines > max_safe_mines:
-                        messagebox.showerror(
-                            "Too Many Mines",
-                            f"⚠️ Too many mines can cause instant wins!\n\n"
-                            f"For a {rows}×{cols} board ({total_cells} cells):\n"
-                            f"• Recommended max: {max_safe_mines} mines (15%)\n"
-                            f"• You entered: {mines} mines ({int(mines/total_cells*100)}%)\n\n"
-                            f"Small boards need the right mine balance.\n"
-                            f"Reduce mines to at most {max_safe_mines}."
-                        )
-                        return
-                
-                # Warning for very high mine density
+                # High mine density warning
                 mine_percentage = (mines / total_cells) * 100
                 if mine_percentage > 60:
                     response = messagebox.askyesno(
                         "High Mine Density Warning",
                         f"Your board has {mine_percentage:.1f}% mines!\n\n"
-                        f"This will make the game extremely difficult.\n"
+                        f"This will be extremely difficult.\n"
                         f"Recommended: 10-25% mine density.\n\n"
                         f"Continue anyway?",
                         icon='warning'
                     )
                     if not response:
                         return
-                    
+                
+                # ALL VALIDATION PASSED - START THE GAME
                 dialog.destroy()
                 self.root.withdraw()
                 
@@ -446,7 +448,6 @@ class MainMenu:
             except ValueError:
                 messagebox.showerror("Invalid Input", "Please enter valid numbers")
         
-        # Using ttk.Button with style
         ttk.Button(
             dialog,
             text="🚀 Start Game",
