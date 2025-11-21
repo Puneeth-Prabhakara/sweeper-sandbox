@@ -372,40 +372,40 @@ class MainMenu:
                     )
                     return
                 
-                # ✨✨✨ INSTANT-WIN BUG FIX - MUST RUN BEFORE OTHER CHECKS ✨✨✨
-                # This prevents instant-win on small boards (both too few AND too many mines)
+                # ✨✨ COMPREHENSIVE INSTANT-WIN PREVENTION ✨✨
+                # Check 1: Minimum mines for ALL board sizes (prevents instant-win)
+                min_safe_mines_all_boards = max(2, int(total_cells * 0.05))  # Minimum 5% or 2 mines
+                
+                if mines < min_safe_mines_all_boards:
+                    messagebox.showerror(
+                        "Too Few Mines",
+                        f"⚠️ Too few mines cause instant wins!\n\n"
+                        f"For a {rows}×{cols} board ({total_cells} cells):\n"
+                        f"• Minimum required: {min_safe_mines_all_boards} mines (5%)\n"
+                        f"• You entered: {mines} mine(s)\n\n"
+                        f"With so few mines, the entire board becomes\n"
+                        f"one giant opening - you win on first click!\n\n"
+                        f"Please use at least {min_safe_mines_all_boards} mines."
+                    )
+                    return
+                
+                # Check 2: Additional validation for SMALL boards (prevents clustering)
                 if total_cells < 36:  # Boards smaller than 6×6
-                    min_safe_mines = max(2, int(total_cells * 0.08))  # At least 8% or minimum 2
-                    max_safe_mines = int(total_cells * 0.15)  # Maximum 15%
+                    max_safe_mines = int(total_cells * 0.15)  # Maximum 15% for small boards
                     
-                    # Check for TOO FEW mines
-                    if mines < min_safe_mines:
-                        messagebox.showerror(
-                            "Too Few Mines",
-                            f"⚠️ Too few mines cause instant wins!\n\n"
-                            f"For a {rows}×{cols} board ({total_cells} cells):\n"
-                            f"• Minimum required: {min_safe_mines} mines\n"
-                            f"• You entered: {mines} mine(s)\n\n"
-                            f"With so few mines, the entire board becomes\n"
-                            f"one giant opening - you win on first click!\n\n"
-                            f"Please use at least {min_safe_mines} mines."
-                        )
-                        return  # STOP - don't start the game
-                    
-                    # Check for TOO MANY mines
                     if mines > max_safe_mines:
                         messagebox.showerror(
                             "Too Many Mines",
-                            f"⚠️ Too many mines cause instant wins!\n\n"
+                            f"⚠️ Too many mines cause instant wins on small boards!\n\n"
                             f"For a {rows}×{cols} board ({total_cells} cells):\n"
-                            f"• Maximum recommended: {max_safe_mines} mines\n"
+                            f"• Maximum recommended: {max_safe_mines} mines (15%)\n"
                             f"• You entered: {mines} mines\n\n"
                             f"Mines get clustered, creating huge openings.\n\n"
                             f"Please use at most {max_safe_mines} mines."
                         )
-                        return  # STOP - don't start the game
+                        return
                 
-                # Reasonable maximum validation (for larger boards)
+                # Reasonable maximum validation (for all boards)
                 max_mines = total_cells - 10
                 if mines > max_mines:
                     messagebox.showerror(
