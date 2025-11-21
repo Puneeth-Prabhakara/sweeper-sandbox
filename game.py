@@ -70,16 +70,16 @@ class MinesweeperGame:
         try:
             # Load images with the root window as master
             self.images = {
-                "plain": tk.PhotoImage(file="images/tile_plain.gif", master=self.root),
-                "clicked": tk.PhotoImage(file="images/tile_clicked.gif", master=self.root),
-                "mine": tk.PhotoImage(file="images/tile_mine.gif", master=self.root),
-                "flag": tk.PhotoImage(file="images/tile_flag.gif", master=self.root),
-                "wrong": tk.PhotoImage(file="images/tile_wrong.gif", master=self.root),
+                "plain": tk.PhotoImage(file="tile_plain.gif", master=self.root),
+                "clicked": tk.PhotoImage(file="tile_clicked.gif", master=self.root),
+                "mine": tk.PhotoImage(file="tile_mine.gif", master=self.root),
+                "flag": tk.PhotoImage(file="tile_flag.gif", master=self.root),
+                "wrong": tk.PhotoImage(file="tile_wrong.gif", master=self.root),
                 "numbers": []
             }
             for i in range(1, 9):
                 self.images["numbers"].append(
-                    tk.PhotoImage(file=f"images/tile_{i}.gif", master=self.root)
+                    tk.PhotoImage(file=f"tile_{i}.gif", master=self.root)
                 )
             return True
         except Exception as e:
